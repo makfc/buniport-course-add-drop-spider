@@ -7,6 +7,7 @@ import logging
 
 from selenium import webdriver
 from splinter import Browser
+import requests
 
 import json
 
@@ -65,22 +66,39 @@ def loop():
     while True:
         if re.match("https://iss.hkbu.edu.hk/buam/(m/)?signForm.seam.*", browser.url):
             is_logged_in = False
-            browser.fill('signinForm:username', config.student_id)
-            browser.fill('signinForm:password', config.password)
+            # browser.fill('signinForm:username', config.student_id)
+            # browser.fill('signinForm:password', config.password)
+            # browser.click_link_by_id('signinForm:submit')
+            browser.execute_script(
+                "document.getElementById('signinForm:username').value = '" + config.student_id + "'")
+            browser.execute_script(
+                "document.getElementById('signinForm:password').value = '" + config.password + "'")
+            while len(browser.find_by_id('signinForm:recaptcha_response_field').value) != 4:
+                pass
             browser.click_link_by_id('signinForm:submit')
-            # browser.execute_script(
-            #     "document.getElementById('signinForm:username').value = " + config.student_id + ";"
-            #     "document.getElementById('signinForm:password').value = " + config.password + ";"
-            #     "document.getElementById('signinForm:submit').click();")
+
         elif re.match("https://buniport03.hkbu.edu.hk.*", browser.url):
             if not is_logged_in:
                 is_logged_in = True
                 pickle.dump(browser.driver.get_cookies(), open(COOKIES_FILE_NAME, "wb"))
                 logger.info('Login successful!')
+                browser.click_link_by_partial_text('增修/退修科目')
+                time.sleep(1)
+                browser.windows.current = browser.windows.current.next
+                browser.is_element_present_by_id('addDrop:tabAddDrop_lbl')
+                browser.click_link_by_id('addDrop:tabAddDrop_lbl')
+                browser.click_link_by_id('addDrop:imgEdit')
+                'https://iss.hkbu.edu.hk/sisweb2/reg/sectionInfo.seam?acYear=2018&term=S1&subjCode=LANG1026'
+                pass
 
         time.sleep(1)
 
 
 start()
-loop()
+while True:
+    try:
+        loop()
+    except Exception as e:
+        logger.error(e)
+        browser.windows.current = browser.windows[0]
 pass
