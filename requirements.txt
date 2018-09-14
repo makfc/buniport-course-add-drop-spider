@@ -1,0 +1,5 @@
+beautifulsoup4
+requests
+splinter
+selenium
+python-telegram-bot
