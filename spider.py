@@ -138,7 +138,7 @@ def auto_login_loop(is_reg_course=False):
             while True:
                 if vist_courseAddDrop():
                     break
-                browser.windows.current.close()
+                browser.close()
                 browser.driver.switch_to_window(window_home)
                 time.sleep(2)
                 browser.reload()
