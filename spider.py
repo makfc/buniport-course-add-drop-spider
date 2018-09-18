@@ -102,7 +102,7 @@ def login():
     browser.click_link_by_id('signinForm:submit')
 
 
-def vist_courseAddDrop():
+def vist_course_add_drop():
     global window_courseAddDrop
     browser.click_link_by_partial_text('增修/退修科目')
     count = len(browser.driver.window_handles)
@@ -136,7 +136,7 @@ def auto_login_loop(is_reg_course=False):
                 logger.info('Login successful!')
 
             while True:
-                if vist_courseAddDrop():
+                if vist_course_add_drop():
                     break
                 browser.close()
                 browser.driver.switch_to_window(window_home)
@@ -148,7 +148,8 @@ def auto_login_loop(is_reg_course=False):
 
             course_list = [["LANG1026", lambda x: int(x[0]) <= 34],
                            "GDCV1115",
-                           "GDCV1096"
+                           "GDCV1096",
+                           "GDSS1016"
                            ]
 
             check_sections_info(course_list)
