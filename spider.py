@@ -105,7 +105,9 @@ def login():
 def vist_courseAddDrop():
     global window_courseAddDrop
     browser.click_link_by_partial_text('增修/退修科目')
-    time.sleep(1)
+    count = len(browser.driver.window_handles)
+    while len(browser.driver.window_handles) <= count:
+        pass
     window_courseAddDrop = browser.driver.window_handles[-1]
     browser.driver.switch_to_window(window_courseAddDrop)
     try:
@@ -136,9 +138,8 @@ def auto_login_loop(is_reg_course=False):
             while True:
                 if vist_courseAddDrop():
                     break
-                #browser.windows.current.close()
+                browser.windows.current.close()
                 browser.driver.switch_to_window(window_home)
-                close_others_window()
                 time.sleep(2)
                 browser.reload()
 
@@ -241,9 +242,8 @@ def reg_course(code, section, group=""):
         # When current courseAddDrop page session timeout and redirected to home page
         logger.error(e2)
         logger.error("CourseAddDrop page session timeout!")
-        #browser.close()
+        browser.close()
         browser.driver.switch_to_window(window_home)
-        close_others_window()
         vist_home()
         auto_login_loop(is_reg_course=True)
 
@@ -313,6 +313,7 @@ def send_text(message):
 def close_others_window():
     while len(browser.windows) > 1:
         browser.windows.current.close_others()
+
 
 def set_sessions(driver):
     request = requests.Session()
