@@ -146,8 +146,12 @@ def auto_login_loop(is_reg_course=False):
             if is_reg_course:
                 return
 
-            check_sections_info()
-            pass
+            course_list = [["LANG1026", lambda x: int(x[0]) <= 34],
+                           "GDCV1115",
+                           "GDCV1096"
+                           ]
+
+            check_sections_info(course_list)
 
         time.sleep(1)
 
@@ -160,74 +164,84 @@ isFull = True
 found = False
 
 
-def check_sections_info():
+def check_sections_info(course_list):
     global isFull, found, window_checkSections
-    course_code = "LANG1026"
-    open_in_new_tab(f"https://iss.hkbu.edu.hk/sisweb2/reg/sectionInfo.seam?acYear=2018&term=S1&subjCode={course_code}")
+
+    open_in_new_tab("")
     time.sleep(1)
     window_checkSections = browser.driver.window_handles[-1]
     browser.driver.switch_to_window(window_checkSections)
 
     old_list = []
     while True:
-        bs = BeautifulSoup(browser.html, "lxml")
-        pageTitle = bs(class_="pageTitle")[0].text
+        for course in course_list:
+            if type(course) == str:
+                course_code = course
+                filter_func = None
+            elif type(course) == list and len(course) == 2:
+                course_code = course[0]
+                filter_func = course[1]
+            else:
+                raise Exception("Wrong type in course_list")
 
-        # Convert html table to list
-        # table_data = [[cell.text for cell in row(["td", "th"])]
-        #             for row in bs("tr")]
-        table_data = []
-        for row in bs("tr"):
-            row_data = []
-            for cell in row(["td", "th"]):
-                img_tag = cell("img")
-                if len(img_tag) > 0:
-                    title = img_tag[0].get("title")
-                    if title:
-                        row_data.append(title)
-                else:
-                    row_data.append(cell.text)
-            table_data.append(row_data)
-        ##############################
-        table_header = str(table_data[15])
-        # table_data[19][0](title="Not for Exchange Students")
-        filter_func = lambda x: len(x) == 14
-        if filter_func is not None:
-            table_data = (filter(filter_func, table_data))
-        table_data = (map(lambda x:
-                          [remove_space(y) for y in x]
-                          , table_data))
-        table_data = (filter(lambda x: int(x[0]) <= 34, table_data))
-        table_data = list(filter(lambda x: x[8] != 'Full', table_data))
-        if table_data != old_list:
-            old_list = table_data
-            text = pageTitle + f"\n{table_header}"
+            browser.visit(
+                f"https://iss.hkbu.edu.hk/sisweb2/reg/sectionInfo.seam?acYear=2018&term=S1&subjCode={course_code}")
+            bs = BeautifulSoup(browser.html, "lxml")
+            pageTitle = bs(class_="pageTitle")[0].text
+
+            # Convert html table to list
+            # table_data = [[cell.text for cell in row(["td", "th"])]
+            #             for row in bs("tr")]
+            table_data = []
+            for row in bs("tr"):
+                row_data = []
+                for cell in row(["td", "th"]):
+                    img_tag = cell("img")
+                    if len(img_tag) > 0:
+                        title = img_tag[0].get("title")
+                        if title:
+                            row_data.append(title)
+                    else:
+                        row_data.append(cell.text)
+                table_data.append(row_data)
+            ##############################
+            table_header = str(table_data[15])
+            # table_data[19][0](title="Not for Exchange Students")
+
+            table_data = (filter(lambda x: len(x) == 14, table_data))
+            table_data = (map(lambda x:
+                              [remove_space(y) for y in x]
+                              , table_data))
+            if filter_func is not None:
+                table_data = (filter(filter_func, table_data))
+            table_data = list(filter(lambda x: x[8] != 'Full', table_data))
+            if table_data != old_list:
+                old_list = table_data
+                text = pageTitle + f"\n{table_header}"
+                for row in table_data:
+                    # 0     Section code
+                    # 2,4   Day/Time/Venue
+                    # 6     Instructor (Dept)
+                    # 7     Medium ofInstruction
+                    # 8     Available Quota
+                    #       Others
+                    #       Remarks
+                    text += "\n" + ("-" * 70)
+                    text += f"\n{row[0]}|{row[2]}|{row[4]}|{row[6]}|{row[7]}|{row[8]}"
+                if len(table_data) == 0:
+                    text += "\n" + ("-" * 70)
+                    text += "\nAll selected section full again!"
+                logger.info(text)
+                send_text(text)
+                # send_screenshot()
+
+            # reg_course
             for row in table_data:
-                # 0     Section code
-                # 2,4   Day/Time/Venue
-                # 6     Instructor (Dept)
-                # 7     Medium ofInstruction
-                # 8     Available Quota
-                #       Others
-                #       Remarks
-                text += "\n" + ("-" * 70)
-                text += f"\n{row[0]}|{row[2]}|{row[4]}|{row[6]}|{row[7]}|{row[8]}"
-            if len(table_data) == 0:
-                text += "\n" + ("-" * 70)
-                text += "\nAll selected section full again!"
-            logger.info(text)
-            send_text(text)
-            # send_screenshot()
-
-        # reg_course
-        for row in table_data:
-            reg_course(course_code, row[0])  # "#N-FREE-001"
-            break
-        if len(table_data) > 0:
-            browser.driver.switch_to_window(window_checkSections)
-
-        time.sleep(3)
-        browser.reload()
+                reg_course(course_code, row[0])  # "#N-FREE-001"
+                break
+            if len(table_data) > 0:
+                browser.driver.switch_to_window(window_checkSections)
+        time.sleep(1)
 
 
 def reg_course(code, section, group=""):
