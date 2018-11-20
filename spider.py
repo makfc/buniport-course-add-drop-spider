@@ -279,7 +279,6 @@ def reg_course(code, section, group=""):
         auto_login_loop(is_exception=True)
 
     # Check if enrolled
-
     is_enrolled = False
     input_tag_id = None  # Change Section input
     add_drop_table = None
