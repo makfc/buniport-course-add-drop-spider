@@ -121,7 +121,7 @@ def vist_course_add_drop():
     return False
 
 
-def auto_login_loop(is_reg_course=False):
+def auto_login_loop(is_exception=False):
     global is_logged_in, window_courseAddDrop
     while True:
         if bool(re.match("https://iss.hkbu.edu.hk/buam/(m/)?signForm.seam", browser.url)):
@@ -143,16 +143,10 @@ def auto_login_loop(is_reg_course=False):
                 time.sleep(2)
                 browser.reload()
 
-            if is_reg_course:
+            if is_exception:
                 return
 
-            course_list = [["LANG1026", lambda x: int(x[0]) <= 34],
-                           "GDCV1115",
-                           "GDCV1096",
-                           "GDSS1016"
-                           ]
-
-            check_sections_info(course_list)
+            check_sections_info(config.course_list)
 
         time.sleep(1)
 
@@ -186,7 +180,7 @@ def check_sections_info(course_list):
                 raise Exception("Wrong type in course_list")
 
             browser.visit(
-                f"https://iss.hkbu.edu.hk/sisweb2/reg/sectionInfo.seam?acYear=2018&term=S1&subjCode={course_code}")
+                f"https://iss.hkbu.edu.hk/sisweb2/reg/sectionInfo.seam?acYear=2018&term=S2&subjCode={course_code}")
             bs = BeautifulSoup(browser.html, "lxml")
             pageTitle = bs(class_="pageTitle")[0].text
 
@@ -194,41 +188,59 @@ def check_sections_info(course_list):
             # table_data = [[cell.text for cell in row(["td", "th"])]
             #             for row in bs("tr")]
             table_data = []
-            for row in bs("tr"):
-                row_data = []
-                for cell in row(["td", "th"]):
-                    img_tag = cell("img")
-                    if len(img_tag) > 0:
-                        title = img_tag[0].get("title")
-                        if title:
-                            row_data.append(title)
-                    else:
-                        row_data.append(cell.text)
-                table_data.append(row_data)
+            # for row in bs("tr"):
+            #     row_data = []
+            #     for cell in row(["td", "th"]):
+            #         img_tag = cell("img")
+            #         if len(img_tag) > 0:
+            #             title = img_tag[0].get("title")
+            #             if title:
+            #                 row_data.append(title)
+            #         else:
+            #             row_data.append(cell.text)
+            #     table_data.append(row_data)
             ##############################
-            table_header = str(table_data[15])
+
+            # Get header
+            table_header = ' | '.join([item.text for item in bs(class_="rich-table-header")[0]])
+            # table_header = str(table_data[15])
             # table_data[19][0](title="Not for Exchange Students")
 
-            table_data = (filter(lambda x: len(x) == 14, table_data))
+            table_row_tag_list = [x for x in bs(class_="rich-table-row")]
+            for row in table_row_tag_list:
+                # 0     Section code
+                # 1     Day/Time/Venue
+                # 2     Instructor (Dept)
+                # 3     Medium ofInstruction
+                # 4     Available Quota
+                # 5     Others
+                # 6     Remarks
+                row = [row(class_='sectDtlSection')[0].text, row(class_='sectDtlDayTimeVenue')[0].text,
+                       row(class_='sectDtlInst')[0].text, row(class_='sectDtlMedium')[0].text,
+                       row(class_='sectDtlQS')[0].text,
+                       [item.get("title") for item in row(class_='sectDtlIcon')[0]("img")],
+                       row(class_='sectDtlRemarks')[0].text]
+                table_data.append(row)
+
+            # Remove all unnecessary stuff
             table_data = (map(lambda x:
                               [remove_space(y) for y in x]
                               , table_data))
+
+            # Apply custom filter
             if filter_func is not None:
                 table_data = (filter(filter_func, table_data))
-            table_data = list(filter(lambda x: x[8] != 'Full', table_data))
+
+            # Get all available section
+            table_data = list(filter(lambda x: x[4] != 'Full', table_data))
+
+            # If there is a difference from the previous check
             if table_data != old_list:
                 old_list = table_data
                 text = pageTitle + f"\n{table_header}"
                 for row in table_data:
-                    # 0     Section code
-                    # 2,4   Day/Time/Venue
-                    # 6     Instructor (Dept)
-                    # 7     Medium ofInstruction
-                    # 8     Available Quota
-                    #       Others
-                    #       Remarks
                     text += "\n" + ("-" * 70)
-                    text += f"\n{row[0]}|{row[2]}|{row[4]}|{row[6]}|{row[7]}|{row[8]}"
+                    text += f"\n{row[0]}|{row[1]}|{row[2]}|{row[3]}|{row[4]}|{row[5]}"
                 if len(table_data) == 0:
                     text += "\n" + ("-" * 70)
                     text += "\nAll selected section full again!"
@@ -236,11 +248,12 @@ def check_sections_info(course_list):
                 send_text(text)
                 # send_screenshot()
 
-            # reg_course
-            for row in table_data:
-                reg_course(course_code, row[0])  # "#N-FREE-001"
-                break
             if len(table_data) > 0:
+                # Execute reg_course
+                for row in table_data:
+                    reg_course(course_code, row[0])  # "#N-FREE-001"
+                    break
+
                 browser.driver.switch_to_window(window_checkSections)
         time.sleep(1)
 
@@ -250,8 +263,11 @@ def reg_course(code, section, group=""):
     try:
         browser.driver.switch_to_window(window_courseAddDrop)
         browser.visit("https://iss.hkbu.edu.hk/sisweb2/olreg/addDropEd.seam")
-        browser.is_element_present_by_id('addDrop:tabAddDrop_lbl')
-        browser.click_link_by_id('addDrop:tabAddDrop_lbl')
+
+        id = 'addDrop:tabAddDrop_lbl'
+        browser.is_element_present_by_id(id)
+        browser.click_link_by_id(id)
+
         browser.click_link_by_id('addDrop:imgEdit')
     except Exception as e2:
         # When current courseAddDrop page session timeout and redirected to home page
@@ -260,57 +276,74 @@ def reg_course(code, section, group=""):
         browser.close()
         browser.driver.switch_to_window(window_home)
         vist_home()
-        auto_login_loop(is_reg_course=True)
+        auto_login_loop(is_exception=True)
 
     # Check if enrolled
-    add_drop_table = BeautifulSoup(browser.html, "lxml")(id="addDrop:enroll")
-    if len(add_drop_table) > 0:
-        if code in add_drop_table[0].text:
-            return
 
-    browser.is_element_present_by_id("addDrop:toAdd:0:s")
-    # browser.fill("addDrop:toAdd:0:s", code)
-    # browser.fill("addDrop:toAdd:0:lc", section)
-    browser.execute_script(f"document.getElementById('addDrop:toAdd:0:s').value = '{code}'")
-    browser.execute_script(f"document.getElementById('addDrop:toAdd:0:lc').value = '{section}'")
-    if group == "":
-        logger.info("group is not specified")
-        browser.click_link_by_id("addDrop:toAdd:0:imgSL")
-        browser.is_element_present_by_id("addDrop:slSubjList")
-        browser.find_by_name("addDrop:slSubjList").last.click()
-        browser.click_link_by_id("addDrop:cmdChgCourseGrp")
-        browser.is_text_present("addDrop:toAdd:0:sl")
-        group = browser.find_by_id("addDrop:toAdd:0:sl")[0].value
+    is_enrolled = False
+    input_tag_id = None  # Change Section input
+    add_drop_table = None
+    while True:
+        # Waiting for page javascript to load
+        add_drop_table = BeautifulSoup(browser.html, "lxml")(id="addDrop:enroll:tb")[0]
+        if len(add_drop_table('input')) > 0:
+            break
+
+    for row_tag in add_drop_table('tr'):
+        td_tag = row_tag(class_='enrCourse')
+        if len(td_tag) > 0:
+            if code in td_tag[0].text:
+                is_enrolled = True
+                td_tag = row_tag(class_='enrChgSect')
+                if len(td_tag) > 0:
+                    input_tag = td_tag[0]('input')
+                    if len(input_tag) > 0:
+                        input_tag_id = input_tag[0].get('id')
+                break
+
+    if is_enrolled and input_tag_id is None:
+        return
+
+    if is_enrolled and input_tag_id is not None:
+        browser.execute_script(f"document.getElementById('{input_tag_id}').value = '{section}'")
     else:
-        # browser.fill("addDrop:toAdd:0:sl", group)
-        browser.execute_script(f"document.getElementById('addDrop:toAdd:0:sl').value = '{group}'")
+        # Start auto fill
+        browser.is_element_present_by_id("addDrop:toAdd:0:s")
+        # browser.fill("addDrop:toAdd:0:s", code)
+        # browser.fill("addDrop:toAdd:0:lc", section)
+        browser.execute_script(f"document.getElementById('addDrop:toAdd:0:s').value = '{code}'")
+        browser.execute_script(f"document.getElementById('addDrop:toAdd:0:lc').value = '{section}'")
+
+        if group == "":
+            logger.info("Group is not specified, the group will be automatically selected")
+            browser.click_link_by_id("addDrop:toAdd:0:imgSL")
+            browser.is_element_present_by_id("addDrop:slSubjList")
+            browser.find_by_name("addDrop:slSubjList").last.click()
+            browser.click_link_by_id("addDrop:cmdChgCourseGrp")
+            browser.is_text_present("addDrop:toAdd:0:sl")
+            group = browser.find_by_id("addDrop:toAdd:0:sl")[0].value
+        else:
+            # browser.fill("addDrop:toAdd:0:sl", group)
+            browser.execute_script(f"document.getElementById('addDrop:toAdd:0:sl').value = '{group}'")
 
     logger.info(f"Filled with {code}|{section}|{group}")
-    browser.click_link_by_id("cmdSaveBottom")
-    logger.info("Clicked cmdSaveBottom")
-
+    browser.click_link_by_id("cmdSaveTop")
+    logger.info("Clicked cmdSaveTop")
     time.sleep(3)
+
+    # Waiting for results
     browser.is_element_present_by_id("addDrop:tabValidRst", wait_time=30)
     logger.info("is_element_present_by_id")
 
-    result_table = BeautifulSoup(browser.html, "lxml")(class_="rich-table olregErrHistory")
-    table_header = [[remove_space(cell.text) for cell in row(["th"])] for row in result_table]
-    table_rows = [[remove_space(cell.text) for cell in row(["td"])] for row in result_table]
+    # Get all table messages
+    submit_result = ''
+    next_line = ''
+    table_tag_list = BeautifulSoup(browser.html, "lxml")(id='addDrop:tabValidRst')[0](class_='rich-table')
+    for table_tag in table_tag_list:
+        table_data = [cell.text for cell in table_tag(["td", "th"])]
+        submit_result += next_line + str(list(map(lambda x: remove_space(x), table_data)))
+        next_line = '\n'
 
-    table_data = [[cell.text for cell in row(["td", "th"])]
-                  for row in BeautifulSoup(browser.html, "lxml")(class_="rich-table olregErrHistory")]
-
-    # Submit Time|Status
-    submit_result = str(table_data[41]) + "\n" + str(
-        list(map(lambda x: remove_space(x), table_data[42])))
-    if len(table_data) > 67:
-        # Submit Time|Status
-        submit_result = str(table_data[64]) + "\n" + str(
-            list(map(lambda x: remove_space(x), table_data[65])))
-        # Error Detail
-        # Course Group|Course|Section|Error Detail
-        submit_result += "\n" + str(table_data[66]) + "\n" + str(
-            list(map(lambda x: remove_space(x), table_data[67])))
     logger.info(submit_result)
     send_text(submit_result)
 
@@ -318,11 +351,11 @@ def reg_course(code, section, group=""):
 # def send_screenshot():
 #     file_name = time.strftime("%Y%m%d-%H%M%S")
 #     browser.driver.save_screenshot(f"{file_name}.pmg")
-#     bot.send_document(config.self_user_id, document=open(file_name, 'rb'))
+#     bot.send_document(config.my_user_id, document=open(file_name, 'rb'))
 
 
 def send_text(message):
-    bot.send_message(config.self_user_id, message)
+    bot.send_message(config.my_user_id, message)
 
 
 def close_others_window():
