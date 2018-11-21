@@ -359,7 +359,7 @@ def reg_course(code, section, group=""):
 
 def send_text(message):
     bot.send_message(config.my_user_id, message)
-    bot.send_message(-1001170605458, message)
+    #bot.send_message(-1001170605458, message)
 
 
 def close_others_window():
