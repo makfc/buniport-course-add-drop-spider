@@ -110,7 +110,7 @@ def vist_course_add_drop():
     count = len(browser.driver.window_handles)
     while len(browser.driver.window_handles) <= count:
         pass
-    window_courseAddDrop = browser.driver.window_handles[-1]
+    window_courseAddDrop = browser.driver.window_handles[-1]  # Get last window
     browser.driver.switch_to_window(window_courseAddDrop)
     try:
         browser.is_element_present_by_id('addDrop:tabAddDrop_lbl')
