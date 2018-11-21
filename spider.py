@@ -84,7 +84,9 @@ def vist_home():
     global window_home
 
     # Visit URL
-    browser.visit("https://buniport.hkbu.edu.hk")
+    browser.driver.get("https://buniport.hkbu.edu.hk")
+    # alert = browser.driver.switch_to_alert()
+    # alert.accept()
     window_home = browser.driver.window_handles[0]
     browser.driver.switch_to_window(window_home)
 
@@ -146,7 +148,7 @@ def auto_login_loop(is_exception=False):
             if is_exception:
                 return
 
-            course_list = [["GCPS1005", lambda x: int(x[0]) == 35]
+            course_list = [["GCPS1005", lambda x: int(x[0]) == 35 and 'Jonathan' in x[2]]
                            ]
             check_sections_info(course_list)
 
@@ -252,9 +254,9 @@ def check_sections_info(course_list):
 
             if len(table_data) > 0:
                 # Execute reg_course
-                # for row in table_data:
-                #     reg_course(course_code, row[0])  # "#N-FREE-001"
-                #     break
+                for row in table_data:
+                    reg_course(course_code, row[0])  # "#N-FREE-001"
+                    break
 
                 browser.driver.switch_to_window(window_checkSections)
         time.sleep(1)
