@@ -146,7 +146,9 @@ def auto_login_loop(is_exception=False):
             if is_exception:
                 return
 
-            check_sections_info(config.course_list)
+            course_list = [["GCPS1005", lambda x: int(x[0]) == 35]
+                           ]
+            check_sections_info(course_list)
 
         time.sleep(1)
 
@@ -250,9 +252,9 @@ def check_sections_info(course_list):
 
             if len(table_data) > 0:
                 # Execute reg_course
-                for row in table_data:
-                    reg_course(course_code, row[0])  # "#N-FREE-001"
-                    break
+                # for row in table_data:
+                #     reg_course(course_code, row[0])  # "#N-FREE-001"
+                #     break
 
                 browser.driver.switch_to_window(window_checkSections)
         time.sleep(1)
@@ -355,6 +357,7 @@ def reg_course(code, section, group=""):
 
 def send_text(message):
     bot.send_message(config.my_user_id, message)
+    bot.send_message(-1001170605458, message)
 
 
 def close_others_window():
