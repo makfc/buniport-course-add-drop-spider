@@ -1,6 +1,7 @@
 import os
 import pickle
 import re
+import threading
 import time
 
 import config
@@ -104,12 +105,16 @@ def login():
     browser.click_link_by_id('signinForm:submit')
 
 
-def vist_course_add_drop():
-    global window_courseAddDrop
-    browser.click_link_by_partial_text('增修/退修科目')
+def wait_new_tab():
     count = len(browser.driver.window_handles)
     while len(browser.driver.window_handles) <= count:
         pass
+
+
+def visit_course_add_drop():
+    global window_courseAddDrop
+    browser.click_link_by_partial_text('增修/退修科目')
+    wait_new_tab()
     window_courseAddDrop = browser.driver.window_handles[-1]  # Get last window
     browser.driver.switch_to_window(window_courseAddDrop)
     try:
@@ -138,7 +143,7 @@ def auto_login_loop(is_exception=False):
                 logger.info('Login successful!')
 
             while True:
-                if vist_course_add_drop():
+                if visit_course_add_drop():
                     break
                 browser.close()
                 browser.driver.switch_to_window(window_home)
@@ -148,8 +153,7 @@ def auto_login_loop(is_exception=False):
             if is_exception:
                 return
 
-            course_list = [["GCPS1005", lambda x: int(x[0]) == 35 and 'Jonathan' in x[2]]
-                           ]
+            course_list = [["GCPS1005", lambda x: int(x[0]) == 35 and 'Jonathan' in x[2]]]
             check_sections_info(course_list)
 
         time.sleep(1)
@@ -163,53 +167,36 @@ isFull = True
 found = False
 
 
-def check_sections_info(course_list):
+def check_sections_info(task_list):
     global isFull, found, window_checkSections
 
     open_in_new_tab("")
-    time.sleep(1)
+    wait_new_tab()  # time.sleep(1)
     window_checkSections = browser.driver.window_handles[-1]
     browser.driver.switch_to_window(window_checkSections)
 
     old_list = []
     while True:
-        for course in course_list:
-            if type(course) == str:
-                course_code = course
+        for task in task_list:
+            # Task setup
+            if type(task) == str:
+                course_code = task
                 filter_func = None
-            elif type(course) == list and len(course) == 2:
-                course_code = course[0]
-                filter_func = course[1]
+            elif type(task) == list and len(task) == 2:
+                course_code = task[0]
+                filter_func = task[1]
             else:
                 raise Exception("Wrong type in course_list")
 
             browser.visit(
                 f"https://iss.hkbu.edu.hk/sisweb2/reg/sectionInfo.seam?acYear=2018&term=S2&subjCode={course_code}")
             bs = BeautifulSoup(browser.html, "lxml")
-            pageTitle = bs(class_="pageTitle")[0].text
-
-            # Convert html table to list
-            # table_data = [[cell.text for cell in row(["td", "th"])]
-            #             for row in bs("tr")]
-            table_data = []
-            # for row in bs("tr"):
-            #     row_data = []
-            #     for cell in row(["td", "th"]):
-            #         img_tag = cell("img")
-            #         if len(img_tag) > 0:
-            #             title = img_tag[0].get("title")
-            #             if title:
-            #                 row_data.append(title)
-            #         else:
-            #             row_data.append(cell.text)
-            #     table_data.append(row_data)
-            ##############################
+            page_title = bs(class_="pageTitle")[0].text
 
             # Get header
             table_header = ' | '.join([item.text for item in bs(class_="rich-table-header")[0]])
-            # table_header = str(table_data[15])
-            # table_data[19][0](title="Not for Exchange Students")
 
+            table_data = []
             table_row_tag_list = [x for x in bs(class_="rich-table-row")]
             for row in table_row_tag_list:
                 # 0     Section code
@@ -241,11 +228,14 @@ def check_sections_info(course_list):
             # If there is a difference from the previous check
             if table_data != old_list:
                 old_list = table_data
-                text = pageTitle + f"\n{table_header}"
-                for row in table_data:
-                    text += "\n" + ("-" * 70)
-                    text += f"\n{row[0]}|{row[1]}|{row[2]}|{row[3]}|{row[4]}|{row[5]}"
-                if len(table_data) == 0:
+                text = page_title + f"\n{table_header}"
+                if len(table_data) > 0:
+                    # Print all available section
+                    for row in table_data:
+                        text += "\n" + ("-" * 70)
+                        text += f"\n{row[0]}|{row[1]}|{row[2]}|{row[3]}|{row[4]}|{row[5]}"
+                        break
+                else:
                     text += "\n" + ("-" * 70)
                     text += "\nAll selected section full again!"
                 logger.info(text)
@@ -266,13 +256,16 @@ def reg_course(code, section, group=""):
     logger.info(f"reg_course with ({code}|{section}|{group})")
     try:
         browser.driver.switch_to_window(window_courseAddDrop)
-        browser.visit("https://iss.hkbu.edu.hk/sisweb2/olreg/addDropEd.seam")
 
-        id = 'addDrop:tabAddDrop_lbl'
-        browser.is_element_present_by_id(id)
-        browser.click_link_by_id(id)
+        tag_id = 'addDrop:tabAddDrop_lbl'
+        if browser.find_by_id(tag_id):
+            browser.click_link_by_id(tag_id)
+        else:
+            browser.visit("https://iss.hkbu.edu.hk/sisweb2/olreg/addDropEd.seam")
+            browser.is_element_present_by_id(tag_id)
+            browser.click_link_by_id(tag_id)
+            browser.click_link_by_id('addDrop:imgEdit')
 
-        browser.click_link_by_id('addDrop:imgEdit')
     except Exception as e2:
         # When current courseAddDrop page session timeout and redirected to home page
         logger.error(e2)
@@ -283,7 +276,7 @@ def reg_course(code, section, group=""):
         auto_login_loop(is_exception=True)
 
     # Check if enrolled
-    is_enrolled = False
+    is_change_section = False
     input_tag_id = None  # Change Section input
     add_drop_table = None
     while True:
@@ -296,7 +289,9 @@ def reg_course(code, section, group=""):
         td_tag = row_tag(class_='enrCourse')
         if len(td_tag) > 0:
             if code in td_tag[0].text:
-                is_enrolled = True
+                if section in row_tag(class_='enrSect')[0].text:  # is_enrolled
+                    return
+                is_change_section = True
                 td_tag = row_tag(class_='enrChgSect')
                 if len(td_tag) > 0:
                     input_tag = td_tag[0]('input')
@@ -304,10 +299,10 @@ def reg_course(code, section, group=""):
                         input_tag_id = input_tag[0].get('id')
                 break
 
-    if is_enrolled and input_tag_id is None:
+    if is_change_section and input_tag_id is None:
         return
 
-    if is_enrolled and input_tag_id is not None:
+    if is_change_section and input_tag_id is not None:
         browser.execute_script(f"document.getElementById('{input_tag_id}').value = '{section}'")
     else:
         # Start auto fill
@@ -358,8 +353,13 @@ def reg_course(code, section, group=""):
 
 
 def send_text(message):
-    bot.send_message(config.my_user_id, message)
-    #bot.send_message(-1001170605458, message)
+    t = threading.Thread(target=bot.send_message,
+                         args=(config.my_user_id,
+                               message),
+                         kwargs={})
+    t.start()
+    # bot.send_message(config.my_user_id, message)
+    # bot.send_message(-1001170605458, message)
 
 
 def close_others_window():
@@ -367,19 +367,19 @@ def close_others_window():
         browser.windows.current.close_others()
 
 
-def set_sessions(driver):
-    request = requests.Session()
-    headers = {
-        "User-Agent":
-            "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 "
-            "(KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36"
-    }
-    request.headers.update(headers)
-    cookies = driver.get_cookies()
-    for cookie in cookies:
-        request.cookies.set(cookie['name'], cookie['value'])
-
-    return request
+# def set_sessions(driver):
+#     request = requests.Session()
+#     headers = {
+#         "User-Agent":
+#             "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 "
+#             "(KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36"
+#     }
+#     request.headers.update(headers)
+#     cookies = driver.get_cookies()
+#     for cookie in cookies:
+#         request.cookies.set(cookie['name'], cookie['value'])
+#
+#     return request
 
 
 cookie_setup()
