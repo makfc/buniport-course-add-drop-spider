@@ -145,10 +145,11 @@ def auto_login_loop(is_exception=False):
             while True:
                 if visit_course_add_drop():
                     break
-                browser.close()
-                browser.driver.switch_to_window(window_home)
+                browser.windows.current.close()
                 time.sleep(2)
+                browser.driver.switch_to_window(window_home)
                 browser.reload()
+                is_exception = True
 
             if is_exception:
                 return
