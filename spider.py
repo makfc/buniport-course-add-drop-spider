@@ -154,7 +154,8 @@ def auto_login_loop(is_exception=False):
             if is_exception:
                 return
 
-            course_list = [["GCPS1005", lambda x: int(x[0]) == 35 and 'Jonathan' in x[2]]]
+            course_list = [["GCPS1005", lambda x: int(x[0]) == 35 and 'Jonathan' in x[2]]
+                           ]
             check_sections_info(course_list)
 
         time.sleep(1)
@@ -171,8 +172,11 @@ found = False
 def check_sections_info(task_list):
     global isFull, found, window_checkSections
 
+    count = len(browser.driver.window_handles)
     open_in_new_tab("")
-    wait_new_tab()  # time.sleep(1)
+    while len(browser.driver.window_handles) <= count:
+        pass
+    # wait_new_tab()  # time.sleep(1)
     window_checkSections = browser.driver.window_handles[-1]
     browser.driver.switch_to_window(window_checkSections)
 
