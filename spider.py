@@ -271,10 +271,11 @@ def reg_course(code, section, group=""):
         # When current courseAddDrop page session timeout and redirected to home page
         logger.error(e2)
         logger.error("CourseAddDrop page session timeout!")
-        browser.close()
-        browser.driver.switch_to_window(window_home)
-        vist_home()
-        auto_login_loop(is_exception=True)
+        raise Exception
+        # browser.close()
+        # browser.driver.switch_to_window(window_home)
+        # vist_home()
+        # auto_login_loop(is_exception=True)
 
     # Check if enrolled
     is_change_section = False
