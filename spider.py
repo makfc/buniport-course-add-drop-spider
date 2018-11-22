@@ -366,7 +366,7 @@ def send_text(message):
     t.start()
     # bot.send_message(config.my_user_id, message)
     # bot.send_message(-1001170605458, message)
-
+    # https://api.telegram.org/bot<YourBOTToken>/getUpdates
 
 def close_others_window():
     while len(browser.windows) > 1:
