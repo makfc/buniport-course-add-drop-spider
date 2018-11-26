@@ -101,14 +101,14 @@ def login():
     browser.execute_script(
         f"document.getElementById('signinForm:password').value = '{config.password}'")
     while len(browser.find_by_id('signinForm:recaptcha_response_field').value) != 4:
-        pass
+        time.sleep(0.1)  # pass
     browser.click_link_by_id('signinForm:submit')
 
 
 def wait_new_tab():
     count = len(browser.driver.window_handles)
     while len(browser.driver.window_handles) <= count:
-        pass
+        time.sleep(0.1)  # pass
 
 
 def visit_course_add_drop():
@@ -165,17 +165,16 @@ def remove_space(text):
     return re.sub('[\n\t]+', '\t', str(text).strip(' \t\n\r'))
 
 
-isFull = True
-found = False
+is_full = True
 
 
 def check_sections_info(task_list):
-    global isFull, found, window_checkSections
+    global is_full, window_checkSections
 
     count = len(browser.driver.window_handles)
     open_in_new_tab("")
     while len(browser.driver.window_handles) <= count:
-        pass
+        time.sleep(0.1)  # pass
     # wait_new_tab()  # time.sleep(1)
     window_checkSections = browser.driver.window_handles[-1]
     browser.driver.switch_to_window(window_checkSections)
@@ -257,8 +256,8 @@ def check_sections_info(task_list):
         time.sleep(1)
 
 
-def reg_course(code, section, group=""):
-    logger.info(f"reg_course with ({code}|{section}|{group})")
+def reg_course(course_code, section, group=""):
+    logger.info(f"reg_course with ({course_code}|{section}|{group})")
     try:
         browser.driver.switch_to_window(window_courseAddDrop)
 
@@ -271,9 +270,9 @@ def reg_course(code, section, group=""):
             browser.click_link_by_id(tag_id)
             browser.click_link_by_id('addDrop:imgEdit')
 
-    except Exception as e2:
+    except Exception as e:
         # When current courseAddDrop page session timeout and redirected to home page
-        logger.error(e2)
+        logger.error(e)
         logger.error("CourseAddDrop page session timeout!")
         raise Exception
         # browser.close()
@@ -290,11 +289,13 @@ def reg_course(code, section, group=""):
         add_drop_table = BeautifulSoup(browser.html, "lxml")(id="addDrop:enroll:tb")[0]
         if len(add_drop_table('input')) > 0:
             break
+        else:
+            time.sleep(0.1)
 
     for row_tag in add_drop_table('tr'):
         td_tag = row_tag(class_='enrCourse')
         if len(td_tag) > 0:
-            if code in td_tag[0].text:
+            if course_code in td_tag[0].text:
                 if section in row_tag(class_='enrSect')[0].text:  # is_enrolled
                     return
                 is_change_section = True
@@ -315,7 +316,7 @@ def reg_course(code, section, group=""):
         browser.is_element_present_by_id("addDrop:toAdd:0:s")
         # browser.fill("addDrop:toAdd:0:s", code)
         # browser.fill("addDrop:toAdd:0:lc", section)
-        browser.execute_script(f"document.getElementById('addDrop:toAdd:0:s').value = '{code}'")
+        browser.execute_script(f"document.getElementById('addDrop:toAdd:0:s').value = '{course_code}'")
         browser.execute_script(f"document.getElementById('addDrop:toAdd:0:lc').value = '{section}'")
 
         if group == "":
@@ -330,7 +331,7 @@ def reg_course(code, section, group=""):
             # browser.fill("addDrop:toAdd:0:sl", group)
             browser.execute_script(f"document.getElementById('addDrop:toAdd:0:sl').value = '{group}'")
 
-    logger.info(f"Filled with {code}|{section}|{group}")
+    logger.info(f"Filled with {course_code}|{section}|{group}")
     browser.click_link_by_id("cmdSaveTop")
     logger.info("Clicked cmdSaveTop")
     time.sleep(3)
@@ -341,12 +342,14 @@ def reg_course(code, section, group=""):
 
     # Get all table messages
     submit_result = ''
-    next_line = ''
+    double_line = ''
     table_tag_list = BeautifulSoup(browser.html, "lxml")(id='addDrop:tabValidRst')[0](class_='rich-table')
     for table_tag in table_tag_list:
-        table_data = [cell.text for cell in table_tag(["td", "th"])]
-        submit_result += next_line + str(list(map(lambda x: remove_space(x), table_data)))
-        next_line = '\n'
+        submit_result += double_line
+        for table_row in table_tag("tr"):
+            table_data = [cell.text for cell in table_row(["th", "td"])]
+            submit_result += '\n' + str(table_data)
+        double_line = '\n' * 2
 
     logger.info(submit_result)
     send_text(submit_result)
@@ -368,6 +371,7 @@ def send_text(message):
     # bot.send_message(-1001170605458, message)
     # https://api.telegram.org/bot<YourBOTToken>/getUpdates
 
+
 def close_others_window():
     while len(browser.windows) > 1:
         browser.windows.current.close_others()
@@ -386,7 +390,6 @@ def close_others_window():
 #         request.cookies.set(cookie['name'], cookie['value'])
 #
 #     return request
-
 
 cookie_setup()
 while True:
