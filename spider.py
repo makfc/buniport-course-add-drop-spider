@@ -10,7 +10,7 @@ from telegram.ext import Updater, CommandHandler
 
 from selenium import webdriver
 from splinter import Browser
-import requests
+# import requests
 from bs4 import BeautifulSoup
 
 import json
@@ -81,7 +81,7 @@ def cookie_setup():
             browser.driver.add_cookie(cookie)
 
 
-def vist_home():
+def visit_home():
     global window_home
 
     # Visit URL
@@ -237,7 +237,8 @@ def check_sections_info(task_list):
                     # Print all available section
                     for row in table_data:
                         text += "\n" + ("-" * 70)
-                        text += f"\n{row[0]}|{row[1]}|{row[2]}|{row[3]}|{row[4]}|{row[5]}"
+                        text += ' | '.join(row)
+                        # text += f"\n{row[0]}|{row[1]}|{row[2]}|{row[3]}|{row[4]}|{row[5]}"
                         break
                 else:
                     text += "\n" + ("-" * 70)
@@ -394,7 +395,7 @@ def close_others_window():
 cookie_setup()
 while True:
     try:
-        vist_home()
+        visit_home()
         is_logged_in = False
         auto_login_loop()
     except Exception as e:
