@@ -4,13 +4,15 @@ import re
 import threading
 import time
 
+from telegram import ParseMode
+
 import config
 import logging
 from telegram.ext import Updater, CommandHandler
 
 from selenium import webdriver
 from splinter import Browser
-import requests
+# import requests
 from bs4 import BeautifulSoup
 
 import json
@@ -84,7 +86,7 @@ def cookie_setup():
             browser.driver.add_cookie(cookie)
 
 
-def vist_home():
+def visit_home():
     global window_home
 
     # Visit URL
@@ -148,6 +150,7 @@ def auto_login_loop(is_exception=False):
             while True:
                 if visit_course_add_drop():
                     break
+                # break
                 browser.windows.current.close()
                 time.sleep(2)
                 browser.driver.switch_to_window(window_home)
@@ -201,7 +204,8 @@ def check_sections_info(task_list):
             page_title = bs(class_="pageTitle")[0].text
 
             # Get header
-            table_header = ' | '.join([item.text for item in bs(class_="rich-table-header")[0]])
+            table_header = [item.text for item in bs(class_="rich-table-header")[0]]
+            # table_header = ' | '.join([item.text for item in bs(class_="rich-table-header")[0]])
 
             table_data = []
             table_row_tag_list = [x for x in bs(class_="rich-table-row")]
@@ -235,16 +239,16 @@ def check_sections_info(task_list):
             # If there is a difference from the previous check
             if table_data != old_list:
                 old_list = table_data
-                text = page_title + f"\n{table_header}"
+                text = f'`{page_title}\n{str(table_header)}'
                 if len(table_data) > 0:
                     # Print all available section
                     for row in table_data:
-                        text += "\n" + ("-" * 70)
-                        text += f"\n{row[0]}|{row[1]}|{row[2]}|{row[3]}|{row[4]}|{row[5]}"
+                        text += f'\n{str(row)}'
+                        # text += f"\n{row[0]}|{row[1]}|{row[2]}|{row[3]}|{row[4]}|{row[5]}"
                         break
                 else:
-                    text += "\n" + ("-" * 70)
                     text += "\nAll selected section full again!"
+                text += '`'
                 logger.info(text)
                 send_text(text)
                 # send_screenshot()
@@ -370,7 +374,7 @@ def send_text(message):
                                message),
                          kwargs={})
     t.start()
-    # bot.send_message(config.my_user_id, message)
+    bot.send_message(config.my_user_id, message, ParseMode.MARKDOWN)
     # bot.send_message(-1001170605458, message)
     # https://api.telegram.org/bot<YourBOTToken>/getUpdates
 
@@ -397,7 +401,7 @@ def close_others_window():
 cookie_setup()
 while True:
     try:
-        vist_home()
+        visit_home()
         is_logged_in = False
         auto_login_loop()
     except Exception as e:
