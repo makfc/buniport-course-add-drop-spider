@@ -32,13 +32,16 @@ COOKIES_FILE_NAME = 'cookies.pkl'
 # Disable Google Chrome session restore functionality
 preferences_path = config.chrome_profile_path + "/Default/Preferences"
 
-with open(preferences_path, encoding='utf-8') as f:
-    data = json.load(f)
-data['profile']['exit_type'] = "None"
-data['profile']['exited_cleanly'] = True
+try:
+    with open(preferences_path, encoding='utf-8') as f:
+        data = json.load(f)
+    data['profile']['exit_type'] = "None"
+    data['profile']['exited_cleanly'] = True
 
-with open(preferences_path, 'w', encoding='utf-8') as f:
-    f.write(json.dumps(data, ensure_ascii=False))
+    with open(preferences_path, 'w', encoding='utf-8') as f:
+        f.write(json.dumps(data, ensure_ascii=False))
+except FileNotFoundError:
+    pass
 ######################################################
 
 # Telegram bot setup
