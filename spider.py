@@ -102,7 +102,7 @@ def visit_home():
 def login():
     # browser.fill('signinForm:username', config.student_id)
     # browser.fill('signinForm:password', config.password)
-    # browser.click_link_by_id('signinForm:submit')
+    # Same as above but faster
     browser.execute_script(
         f"document.getElementById('signinForm:username').value = '{config.student_id}'")
     browser.execute_script(
@@ -120,7 +120,11 @@ def wait_new_tab():
 
 def visit_course_add_drop():
     global window_courseAddDrop
-    browser.click_link_by_partial_text('增修/退修科目')
+    try:
+        browser.click_link_by_partial_text('增修/退修科目')
+    except Exception:
+        browser.click_link_by_partial_text('Course Add/Drop')
+
     wait_new_tab()
     window_courseAddDrop = browser.driver.window_handles[-1]  # Get last window
     browser.driver.switch_to_window(window_courseAddDrop)
@@ -129,13 +133,13 @@ def visit_course_add_drop():
         browser.click_link_by_id('addDrop:tabAddDrop_lbl')
         browser.click_link_by_id('addDrop:imgEdit')
         return True
-    except Exception as e:
-        logger.error(e)
+    except Exception:
+        logger.error('Course add drop is currently unavailable!')
 
     return False
 
 
-def auto_login_loop(is_exception=False):
+def automatic_login_loop(is_exception=False):
     global is_logged_in, window_courseAddDrop
     while True:
         if bool(re.match("https://iss.hkbu.edu.hk/buam/(m/)?signForm.seam", browser.url)):
@@ -287,7 +291,7 @@ def reg_course(course_code, section, group=""):
         # browser.close()
         # browser.driver.switch_to_window(window_home)
         # vist_home()
-        # auto_login_loop(is_exception=True)
+        # automatic_login_loop(is_exception=True)
 
     # Check if enrolled
     is_change_section = False
@@ -301,30 +305,37 @@ def reg_course(course_code, section, group=""):
         else:
             time.sleep(0.1)
 
+    ######################################################
+    row_tag = None
+    td_tag = []
     for row_tag in add_drop_table('tr'):
         td_tag = row_tag(class_='enrCourse')
+
+    # When the course_code contain in the add_drop_table
+    if len(td_tag) > 0 and course_code in td_tag[0].text:
+        if section in row_tag(class_='enrSect')[0].text:  # The course section already enrolled
+            return
+        is_change_section = True
+        td_tag = row_tag(class_='enrChgSect')
         if len(td_tag) > 0:
-            if course_code in td_tag[0].text:
-                if section in row_tag(class_='enrSect')[0].text:  # is_enrolled
-                    return
-                is_change_section = True
-                td_tag = row_tag(class_='enrChgSect')
-                if len(td_tag) > 0:
-                    input_tag = td_tag[0]('input')
-                    if len(input_tag) > 0:
-                        input_tag_id = input_tag[0].get('id')
-                break
+            input_tag = td_tag[0]('input')
+            if len(input_tag) > 0:
+                input_tag_id = input_tag[0].get('id')
+    ######################################################
 
-    if is_change_section and input_tag_id is None:
+    if is_change_section and input_tag_id is None:  # Error occurs
+        logger.error('is_change_section and input_tag_id is None')
         return
-
-    if is_change_section and input_tag_id is not None:
+    elif is_change_section and input_tag_id is not None:
         browser.execute_script(f"document.getElementById('{input_tag_id}').value = '{section}'")
     else:
         # Start auto fill
+
         browser.is_element_present_by_id("addDrop:toAdd:0:s")
+
         # browser.fill("addDrop:toAdd:0:s", code)
         # browser.fill("addDrop:toAdd:0:lc", section)
+        # Same as above but faster
         browser.execute_script(f"document.getElementById('addDrop:toAdd:0:s').value = '{course_code}'")
         browser.execute_script(f"document.getElementById('addDrop:toAdd:0:lc').value = '{section}'")
 
@@ -351,14 +362,14 @@ def reg_course(course_code, section, group=""):
 
     # Get all table messages
     submit_result = ''
-    double_line = ''
+    double_new_line = ''  # for print result
     table_tag_list = BeautifulSoup(browser.html, "lxml")(id='addDrop:tabValidRst')[0](class_='rich-table')
     for table_tag in table_tag_list:
-        submit_result += double_line
+        submit_result += double_new_line
         for table_row in table_tag("tr"):
             table_data = [cell.text for cell in table_row(["th", "td"])]
             submit_result += '\n' + str(table_data)
-        double_line = '\n' * 2
+        double_new_line = '\n' * 2
 
     logger.info(submit_result)
     send_text(submit_result)
@@ -400,12 +411,15 @@ def close_others_window():
 #
 #     return request
 
+logger.info('Setup cookie')
 cookie_setup()
 while True:
     try:
+        logger.info('Visit ''buniport.hkbu.edu.hk''')
         visit_home()
         is_logged_in = False
-        auto_login_loop()
+        logger.info('Automatic login...')
+        automatic_login_loop()
     except Exception as e:
         logger.error(e)
         close_others_window()
