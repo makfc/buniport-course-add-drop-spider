@@ -47,11 +47,12 @@ except FileNotFoundError:
 ######################################################
 
 # Telegram bot setup
-updater = Updater(token=config.telegram_bot_token)
+if config.start_bot:
+    updater = Updater(token=config.telegram_bot_token)
 
-# Get the dispatcher to register handlers
-dp = updater.dispatcher
-bot = dp.bot
+    # Get the dispatcher to register handlers
+    dp = updater.dispatcher
+    bot = dp.bot
 
 
 ######################################################
@@ -166,8 +167,9 @@ def automatic_login_loop(is_exception=False):
             if is_exception:
                 return
 
-            course_list = [["GCPS1005", lambda x: int(x[0]) == 35 and 'Jonathan' in x[2]]
-                           ]
+            course_list = [
+                # Task(course_code="GCPS1005", filter_func=lambda x: int(x[0]) == 35 and 'Jonathan' in x[2]),
+                Task("GDCV1115")]
             check_sections_info(course_list)
 
         time.sleep(1)
@@ -175,6 +177,12 @@ def automatic_login_loop(is_exception=False):
 
 def remove_space(text):
     return re.sub('[\n\t]+', '\t', str(text).strip(' \t\n\r'))
+
+
+class Task:
+    def __init__(self, course_code, filter_func=None):
+        self.course_code = course_code
+        self.filter_func = filter_func
 
 
 is_full = True
@@ -195,17 +203,11 @@ def check_sections_info(task_list):
     while True:
         for task in task_list:
             # Task setup
-            if type(task) == str:
-                course_code = task
-                filter_func = None
-            elif type(task) == list and len(task) == 2:
-                course_code = task[0]
-                filter_func = task[1]
-            else:
+            if type(task) is not Task:
                 raise Exception("Wrong type in course_list")
 
             browser.visit(
-                f"https://iss.hkbu.edu.hk/sisweb2/reg/sectionInfo.seam?acYear=2018&term=S2&subjCode={course_code}")
+                f"https://iss.hkbu.edu.hk/sisweb2/reg/sectionInfo.seam?acYear=2018&term=S2&subjCode={task.course_code}")
             bs = BeautifulSoup(browser.html, "lxml")
             page_title = bs(class_="pageTitle")[0].text
 
@@ -236,8 +238,8 @@ def check_sections_info(task_list):
                               , table_data))
 
             # Apply custom filter
-            if filter_func is not None:
-                table_data = (filter(filter_func, table_data))
+            if task.filter_func is not None:
+                table_data = (filter(task.filter_func, table_data))
 
             # Get all available section
             table_data = list(filter(lambda x: x[4] != 'Full', table_data))
@@ -262,7 +264,7 @@ def check_sections_info(task_list):
             if len(table_data) > 0:
                 # Execute reg_course
                 for row in table_data:
-                    reg_course(course_code, row[0])  # "#N-FREE-001"
+                    reg_course(task.course_code, row[0])  # "#N-FREE-001"
                     break
 
                 browser.driver.switch_to_window(window_checkSections)
@@ -382,14 +384,15 @@ def reg_course(course_code, section, group=""):
 
 
 def send_text(message):
-    t = threading.Thread(target=bot.send_message,
-                         args=(config.my_user_id,
-                               message),
-                         kwargs={})
-    t.start()
-    bot.send_message(config.my_user_id, message, ParseMode.MARKDOWN)
-    # bot.send_message(-1001170605458, message)
-    # https://api.telegram.org/bot<YourBOTToken>/getUpdates
+    if config.start_bot:
+        t = threading.Thread(target=bot.send_message,
+                             args=(config.my_user_id,
+                                   message),
+                             kwargs={})
+        t.start()
+        bot.send_message(config.my_user_id, message, ParseMode.MARKDOWN)
+        # bot.send_message(-1001170605458, message)
+        # https://api.telegram.org/bot<YourBOTToken>/getUpdates
 
 
 def close_others_window():
@@ -415,7 +418,7 @@ logger.info('Setup cookie')
 cookie_setup()
 while True:
     try:
-        logger.info('Visit ''buniport.hkbu.edu.hk''')
+        logger.info('Visit buniport.hkbu.edu.hk')
         visit_home()
         is_logged_in = False
         logger.info('Automatic login...')
