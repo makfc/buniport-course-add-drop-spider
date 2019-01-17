@@ -62,6 +62,8 @@ def chrome_options_setup():
     chrome_options.add_extension('violentmonkey-2.9.5.crx')
     chrome_options.add_argument("user-data-dir=" + config.chrome_profile_path)
     chrome_options.add_argument("--disable-session-crashed-bubble")
+    if config.headless:
+        chrome_options.add_argument('headless')
     prefs = {"profile.default_content_setting_values.notifications": 2}
     chrome_options.add_experimental_option("prefs", prefs)
     return chrome_options
