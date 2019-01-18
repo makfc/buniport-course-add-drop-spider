@@ -242,7 +242,7 @@ def check_sections_info(task_list):
                 table_data = (filter(task.filter_func, table_data))
 
             # Get all available section
-            # table_data = filter(lambda x: x[4] != 'Full', table_data)
+            table_data = filter(lambda x: x[4] != 'Full', table_data)
 
             # Convert to list
             table_data = list(table_data)
