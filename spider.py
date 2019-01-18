@@ -176,7 +176,7 @@ def automatic_login_loop(is_exception=False):
 
 
 def remove_space(text):
-    return re.sub('[\n\t]+', '\t', str(text).strip(' \t\n\r'))
+    return re.sub('[\n\t]+', ' ' * 4, str(text).strip(' \t\n\r'))
 
 
 class Task:
@@ -242,7 +242,10 @@ def check_sections_info(task_list):
                 table_data = (filter(task.filter_func, table_data))
 
             # Get all available section
-            table_data = list(filter(lambda x: x[4] != 'Full', table_data))
+            # table_data = filter(lambda x: x[4] != 'Full', table_data)
+
+            # Convert to list
+            table_data = list(table_data)
 
             # If there is a difference from the previous check
             if table_data != old_list:
@@ -264,7 +267,9 @@ def check_sections_info(task_list):
             if len(table_data) > 0:
                 # Execute reg_course
                 for row in table_data:
-                    reg_course(task.course_code, row[0])  # "#N-FREE-001"
+                    result = reg_course(task.course_code, row[0])  # "#N-FREE-001"
+                    if result == 0:
+                        task_list.remove(task)
                     break
 
                 browser.driver.switch_to_window(window_checkSections)
@@ -311,12 +316,17 @@ def reg_course(course_code, section, group=""):
     row_tag = None
     td_tag = []
     for row_tag in add_drop_table('tr'):
-        td_tag = row_tag(class_='enrCourse')
+        if course_code in row_tag.text:
+            td_tag = row_tag(class_='enrCourse')
+            break
 
     # When the course_code contain in the add_drop_table
-    if len(td_tag) > 0 and course_code in td_tag[0].text:
-        if section in int(row_tag(class_='enrSect')[0].text):  # The course section already enrolled
-            return
+    if len(td_tag) > 0:
+        if section in row_tag(class_='enrSect')[0].text:
+            # The course section already enrolled
+            logger.info('The course section already enrolled. Task completed!')
+            return 0
+
         is_change_section = True
         td_tag = row_tag(class_='enrChgSect')
         if len(td_tag) > 0:
@@ -369,7 +379,7 @@ def reg_course(course_code, section, group=""):
     for table_tag in table_tag_list:
         submit_result += double_new_line
         for table_row in table_tag("tr"):
-            table_data = [cell.text for cell in table_row(["th", "td"])]
+            table_data = [remove_space(cell.text) for cell in table_row(["th", "td"])]
             submit_result += '\n' + str(table_data)
         double_new_line = '\n' * 2
 
