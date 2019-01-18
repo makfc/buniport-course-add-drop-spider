@@ -382,15 +382,15 @@ def reg_course(course_code, section, group=""):
 #     browser.driver.save_screenshot(f"{file_name}.pmg")
 #     bot.send_document(config.my_user_id, document=open(file_name, 'rb'))
 
-
 def send_text(message):
     if config.start_bot:
+        # bot.send_message(config.my_user_id, message, ParseMode.MARKDOWN)
+        # Same as above
         t = threading.Thread(target=bot.send_message,
                              args=(config.my_user_id,
-                                   message),
+                                   message, ParseMode.MARKDOWN),
                              kwargs={})
         t.start()
-        bot.send_message(config.my_user_id, message, ParseMode.MARKDOWN)
         # bot.send_message(-1001170605458, message)
         # https://api.telegram.org/bot<YourBOTToken>/getUpdates
 
