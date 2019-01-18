@@ -7,6 +7,8 @@ import time
 from telegram import ParseMode
 
 import config
+import config_task
+from task import Task
 import logging
 from telegram.ext import Updater, CommandHandler
 
@@ -172,22 +174,13 @@ def automatic_login_loop(is_exception=False):
             if is_exception:
                 return
 
-            course_list = [
-                # Task(course_code="GCPS1005", filter_func=lambda x: int(x[0]) == 35 and 'Jonathan' in x[2]),
-                Task("GDCV1115")]
-            check_sections_info(course_list)
+            check_sections_info(config_task.task_list)
 
         time.sleep(1)
 
 
 def remove_space(text):
     return re.sub('[\n\t]+', ' ' * 4, str(text).strip(' \t\n\r'))
-
-
-class Task:
-    def __init__(self, course_code, filter_func=None):
-        self.course_code = course_code
-        self.filter_func = filter_func
 
 
 is_full = True
