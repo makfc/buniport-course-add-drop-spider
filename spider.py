@@ -108,8 +108,13 @@ def login():
         f"document.getElementById('signinForm:username').value = '{config.student_id}'")
     browser.execute_script(
         f"document.getElementById('signinForm:password').value = '{config.password}'")
-    while len(browser.find_by_id('signinForm:recaptcha_response_field').value) != 4:
+
+    # Captcha
+    wait_time = 2
+    end_time = time.time() + wait_time
+    while time.time() < end_time and len(browser.find_by_id('signinForm:recaptcha_response_field').value) != 4:
         time.sleep(0.1)  # pass
+
     browser.click_link_by_id('signinForm:submit')
 
 
