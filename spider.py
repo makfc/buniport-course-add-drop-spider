@@ -315,7 +315,7 @@ def reg_course(course_code, section, group=""):
 
     # When the course_code contain in the add_drop_table
     if len(td_tag) > 0 and course_code in td_tag[0].text:
-        if section in row_tag(class_='enrSect')[0].text:  # The course section already enrolled
+        if section in int(row_tag(class_='enrSect')[0].text):  # The course section already enrolled
             return
         is_change_section = True
         td_tag = row_tag(class_='enrChgSect')
