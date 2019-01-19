@@ -73,6 +73,8 @@ def chrome_options_setup():
 
 
 browser = Browser('chrome', options=chrome_options_setup())
+if config.headless:
+    browser.driver.set_window_position(-3000, 0)
 window_home = None
 window_courseAddDrop = None
 window_checkSections = None
