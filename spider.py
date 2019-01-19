@@ -140,14 +140,13 @@ def visit_course_add_drop():
         browser.is_element_present_by_id('addDrop:tabAddDrop_lbl')
         browser.click_link_by_id('addDrop:tabAddDrop_lbl')
         browser.click_link_by_id('addDrop:imgEdit')
-        return True
     except Exception:
         logger.error('Course add drop is currently unavailable!')
+        time.sleep(2)
+        raise Exception
 
-    return False
 
-
-def automatic_login_loop(is_exception=False):
+def automatic_login_loop():
     global is_logged_in, window_courseAddDrop
     while True:
         if bool(re.match("https://iss.hkbu.edu.hk/buam/(m/)?signForm.seam", browser.url)):
@@ -161,19 +160,7 @@ def automatic_login_loop(is_exception=False):
                 pickle.dump(browser.driver.get_cookies(), open(COOKIES_FILE_NAME, "wb"))
                 logger.info('Login successful!')
 
-            while True:
-                if visit_course_add_drop():
-                    break
-                # break
-                browser.windows.current.close()
-                time.sleep(2)
-                browser.driver.switch_to_window(window_home)
-                browser.reload()
-                is_exception = True
-
-            if is_exception:
-                return
-
+            visit_course_add_drop()
             check_sections_info(config_task.task_list)
 
         time.sleep(1)
