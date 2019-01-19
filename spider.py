@@ -94,8 +94,10 @@ def cookie_setup():
 def visit_home():
     global window_home
 
+    url = 'https://buniport.hkbu.edu.hk'
+    logger.info(f'Visit {url}')
     # Visit URL
-    browser.driver.get("https://buniport.hkbu.edu.hk")
+    browser.driver.get(url)
     # alert = browser.driver.switch_to_alert()
     # alert.accept()
     window_home = browser.driver.window_handles[0]
@@ -413,7 +415,6 @@ logger.info('Setup cookie')
 cookie_setup()
 while True:
     try:
-        logger.info('Visit buniport.hkbu.edu.hk')
         visit_home()
         is_logged_in = False
         logger.info('Automatic login...')
