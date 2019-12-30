@@ -10,7 +10,7 @@ A web spider for course registration and notify by Telegram alert bot.
 chrome_profile_path = "D:\chrome_profile"
 
 # The browser window will not be displayed when True
-headless = False  # True or False
+headless = False  # Set it False because chrome extension in headless mode doesn't work
 
 # Check interval(second)
 interval = 0
