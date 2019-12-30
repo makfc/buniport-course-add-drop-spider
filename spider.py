@@ -108,10 +108,10 @@ def login():
     # browser.fill('signinForm:username', config.student_id)
     # browser.fill('signinForm:password', config.password)
     # Same as above but faster
-    browser.execute_script(
-        f"document.getElementById('signinForm:username').value = '{config.student_id}'")
-    browser.execute_script(
-        f"document.getElementById('signinForm:password').value = '{config.password}'")
+    # browser.execute_script(
+    #     f"document.getElementById('signinForm:username').value = '{config.student_id}'")
+    # browser.execute_script(
+    #     f"document.getElementById('signinForm:password').value = '{config.password}'")
 
     # Captcha
     wait_time = 2
