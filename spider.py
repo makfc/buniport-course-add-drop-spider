@@ -196,7 +196,7 @@ def check_sections_info(task_list):
                 raise Exception("Wrong type in course_list")
 
             browser.visit(
-                f"https://iss.hkbu.edu.hk/sisweb2/reg/sectionInfo.seam?acYear=2018&term=S2&subjCode={task.course_code}")
+                f"https://iss.hkbu.edu.hk/sisweb2/reg/sectionInfo.seam?acYear=2019&term=S2&subjCode={task.course_code}")
             bs = BeautifulSoup(browser.html, "lxml")
             page_title = bs(class_="pageTitle")[0].text
 
