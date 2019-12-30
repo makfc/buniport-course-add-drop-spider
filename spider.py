@@ -86,6 +86,8 @@ def open_in_new_tab(url):
 
 def cookie_setup():
     if os.path.exists(COOKIES_FILE_NAME):
+        visit_home()
+        browser.driver.delete_all_cookies()
         cookies = pickle.load(open(COOKIES_FILE_NAME, "rb"))
         for cookie in cookies:
             browser.driver.add_cookie(cookie)
@@ -414,7 +416,7 @@ def close_others_window():
 #     return request
 
 logger.info('Setup cookie')
-# cookie_setup()
+cookie_setup()
 while True:
     try:
         visit_home()
