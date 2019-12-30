@@ -96,7 +96,6 @@ def visit_home():
 
     url = 'https://buniport.hkbu.edu.hk'
     logger.info(f'Visit {url}')
-    # Visit URL
     browser.driver.get(url)
     # alert = browser.driver.switch_to_alert()
     # alert.accept()
@@ -108,10 +107,10 @@ def login():
     # browser.fill('signinForm:username', config.student_id)
     # browser.fill('signinForm:password', config.password)
     # Same as above but faster
-    browser.execute_script(
-        f"document.getElementById('signinForm:username').value = '{config.student_id}'")
-    browser.execute_script(
-        f"document.getElementById('signinForm:password').value = '{config.password}'")
+    # browser.execute_script(
+    #     f"document.getElementById('signinForm:username').value = '{config.student_id}'")
+    # browser.execute_script(
+    #     f"document.getElementById('signinForm:password').value = '{config.password}'")
 
     # Captcha
     wait_time = 2
@@ -130,6 +129,9 @@ def wait_new_tab():
 
 def visit_course_add_drop():
     global window_courseAddDrop
+    url = 'https://buniport03.hkbu.edu.hk/wps/myportal/hidden/Home/Studies/MyStudies'
+    logger.info(f'Visit {url}')
+    browser.driver.get(url)
     try:
         browser.click_link_by_partial_text('增修/退修科目')
     except Exception:
@@ -412,7 +414,7 @@ def close_others_window():
 #     return request
 
 logger.info('Setup cookie')
-cookie_setup()
+# cookie_setup()
 while True:
     try:
         visit_home()
