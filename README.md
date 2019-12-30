@@ -4,7 +4,7 @@ A web spider for course registration and notify by Telegram alert bot.
 ### Usage
 1. If you are not using Windows, download the chromedriver from <https://sites.google.com/a/chromium.org/chromedriver/downloads> and place it to project directory
 
-2. Create config.py in project directory
+2. Create config.py with the following in project directory
 ```
 # Create a new empty directory for chrome profile if you haven't
 chrome_profile_path = "D:\chrome_profile"
