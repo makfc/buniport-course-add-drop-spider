@@ -207,7 +207,7 @@ def check_sections_info(task_list):
             # table_header = ' | '.join([item.text for item in bs(class_="rich-table-header")[0]])
 
             table_data = []
-            table_row_tag_list = [x for x in bs(class_="rich-table-row")]
+            table_row_tag_list = [x for x in bs(class_="sectionInfo")[0](class_="rich-table-row")]
             for row in table_row_tag_list:
                 # 0     Section code
                 # 1     Day/Time/Venue
